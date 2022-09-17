@@ -17,7 +17,13 @@ else
     exit 1
 fi
 
-X=1
-Y=2
+X=$(find $filesdir -mindepth 1 -type f | wc -l)
+ERRORCODES=$?
+
+Y=$(grep -r $filesdir -e $searchstr | wc -l)
+ERRORCODES=$(($?+$ERRORCODES))
 
 echo "The number of files are $X and the number of matching lines are $Y"
+
+#echo "ERRORCODES = $ERRORCODES"
+exit $ERRORCODES
