@@ -1,4 +1,9 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+//#include <stdio.h>
+#include <fcntl.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -7,8 +12,7 @@
  *   either in invocation of the system() call, or if a non-zero return
  *   value was returned by the command issued in @param cmd.
 */
-bool do_system(const char *cmd)
-{
+bool do_system(const char *cmd){
 
 /*
  * TODO  add your code here
@@ -16,7 +20,10 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
+    int ret = system(cmd);
+    if(ret){
+        return false;
+    }
     return true;
 }
 
@@ -34,8 +41,7 @@ bool do_system(const char *cmd)
 *   by the command issued in @param arguments with the specified arguments.
 */
 
-bool do_exec(int count, ...)
-{
+bool do_exec(int count, ...){
     va_list args;
     va_start(args, count);
     char * command[count+1];
@@ -47,7 +53,7 @@ bool do_exec(int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    //command[count] = command[count];
 
 /*
  * TODO:
@@ -58,7 +64,36 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    pid_t cpid;
+    int wstatus;
 
+    cpid = fork();
+
+    if(cpid == -1){
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    else if(cpid == 0){ // Child Process Code
+        printf("Hello from Child\n");
+    // int execv(const char *pathname, char *const argv[]);
+        if(execv(command[0], command+1)){
+            perror("execv");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else{ // Parent Process Code
+        printf("Hello from Parent\n");
+        if(wait(&wstatus) == -1){
+            perror("wait");
+            exit(EXIT_FAILURE);
+        }
+        if(WIFEXITED(wstatus)){
+            printf("exited, status=%d\n", WEXITSTATUS(wstatus));
+            perror("wstatus");
+            exit(EXIT_FAILURE);
+        }
+    }
+    
     va_end(args);
 
     return true;
@@ -69,8 +104,7 @@ bool do_exec(int count, ...)
 *   This file will be closed at completion of the function call.
 * All other parameters, see do_exec above
 */
-bool do_exec_redirect(const char *outputfile, int count, ...)
-{
+bool do_exec_redirect(const char *outputfile, int count, ...){
     va_list args;
     va_start(args, count);
     char * command[count+1];
@@ -82,8 +116,7 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
-
+    //command[count] = command[count];
 
 /*
  * TODO
@@ -92,6 +125,47 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    pid_t cpid;
+    int wstatus;
+    //FILE *fout;
+    int fout;
+
+    cpid = fork();
+
+    if(cpid == -1){
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    else if(cpid == 0){ // Child Process Code
+        printf("Hello from Child\n");
+        fout = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+        //fout = fopen(writefile, "w");
+        //fprintf(fout, "%s\n", writestr);
+        if(fout < 0){ 
+            perror("open"); 
+            exit(EXIT_FAILURE);
+        }
+
+        //fclose(fout);
+        close(fout);
+    // int execv(const char *pathname, char *const argv[]);
+        if(execv(command[0], command+1)){
+            perror("execv");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else{ // Parent Process Code
+        printf("Hello from Parent\n");
+        if(wait(&wstatus) == -1){
+            perror("wait");
+            exit(EXIT_FAILURE);
+        }
+        if(WIFEXITED(wstatus)){
+            printf("exited, status=%d\n", WEXITSTATUS(wstatus));
+            perror("wstatus");
+            exit(EXIT_FAILURE);
+        }
+    }
 
     va_end(args);
 
