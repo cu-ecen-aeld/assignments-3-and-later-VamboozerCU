@@ -51,16 +51,19 @@ bool do_exec(int count, ...){
     {
         command[i] = va_arg(args, char *);
         printf("command[%d] = %s\n", i, command[i]);
-        if(strstr(command[i], "$")){
-            perror("ERROR: Can't include '$' as arguments into execv()");
-            return false;
-        }
+        //if(strstr(command[i], "$")){
+            //perror("ERROR: Can't include '$' as arguments into execv()");
+            //return false;
+        //}
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
     //command[count] = command[count];
-
+    if(command[0][0] != '/'){
+        perror("ERROR: Cmd NOT absolute path\n");
+        return false;
+    }
 /*
  * TODO:
  *   Execute a system command by calling fork, execv(),
@@ -129,7 +132,10 @@ bool do_exec_redirect(const char *outputfile, int count, ...){
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
     //command[count] = command[count];
-
+    if(command[0][0] != '/'){
+        perror("ERROR: Cmd NOT absolute path\n");
+        return false;
+    }
 /*
  * TODO
  *   Call execv, but first using https://stackoverflow.com/a/13784315/1446624 as a refernce,
