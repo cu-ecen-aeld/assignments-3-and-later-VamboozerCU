@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 //#include <stdio.h>
 #include <fcntl.h>
+#include <string.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -49,6 +50,11 @@ bool do_exec(int count, ...){
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+        printf("command[%d] = %s\n", i, command[i]);
+        if(strstr(command[i], "$")){
+            perror("ERROR: Can't include '$' as arguments into execv()");
+            return false;
+        }
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -71,26 +77,25 @@ bool do_exec(int count, ...){
 
     if(cpid == -1){
         perror("fork");
-        exit(EXIT_FAILURE);
+        return false;
     }
     else if(cpid == 0){ // Child Process Code
         printf("Hello from Child\n");
-    // int execv(const char *pathname, char *const argv[]);
-        if(execv(command[0], command+1)){
-            perror("execv");
-            exit(EXIT_FAILURE);
-        }
+        // int execv(const char *pathname, char *const argv[]);
+        execv(command[0], command);
+        perror("execv");
+        return false;
     }
     else{ // Parent Process Code
         printf("Hello from Parent\n");
         if(wait(&wstatus) == -1){
             perror("wait");
-            exit(EXIT_FAILURE);
+            return false;
         }
-        if(WIFEXITED(wstatus)){
+        if(WEXITSTATUS(wstatus) != 0){
             printf("exited, status=%d\n", WEXITSTATUS(wstatus));
             perror("wstatus");
-            exit(EXIT_FAILURE);
+            return false;
         }
     }
     
@@ -108,10 +113,17 @@ bool do_exec_redirect(const char *outputfile, int count, ...){
     va_list args;
     va_start(args, count);
     char * command[count+1];
+    printf("=====================================\n");
+    printf("outputfile = %s\n", outputfile);
     int i;
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
+        printf("command[%d] = %s\n", i, command[i]);
+        //if(strstr(command[i], "$")){
+        //    perror("ERROR: Can't include '$' as arguments into execv()");
+        //    return false;
+        //}
     }
     command[count] = NULL;
     // this line is to avoid a compile warning before your implementation is complete
@@ -129,41 +141,47 @@ bool do_exec_redirect(const char *outputfile, int count, ...){
     int wstatus;
     //FILE *fout;
     int fout;
+    //char *newenviron[] = { NULL };
+
+    //if(outputfile[0] != '/'){
+    //    perror("outputfile");
+    //    return false;
+    //}
 
     cpid = fork();
 
     if(cpid == -1){
-        perror("fork");
-        exit(EXIT_FAILURE);
+        perror("ERROR: fork");
+        return false;
     }
     else if(cpid == 0){ // Child Process Code
         printf("Hello from Child\n");
         fout = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-        //fout = fopen(writefile, "w");
+        //fout = fopen(outputfile, "w+");
         //fprintf(fout, "%s\n", writestr);
         if(fout < 0){ 
-            perror("open"); 
-            exit(EXIT_FAILURE);
+            perror("ERROR: fopen"); 
+            return false;
         }
-
+        if (dup2(fout, 1) < 0) { perror("ERROR: dup2"); return false; }
         //fclose(fout);
         close(fout);
     // int execv(const char *pathname, char *const argv[]);
-        if(execv(command[0], command+1)){
-            perror("execv");
-            exit(EXIT_FAILURE);
+        if(execv(command[0], command)){
+            perror("ERROR: execv");
+            return false;
         }
     }
     else{ // Parent Process Code
         printf("Hello from Parent\n");
         if(wait(&wstatus) == -1){
-            perror("wait");
-            exit(EXIT_FAILURE);
+            perror("ERROR: wait");
+            return false;
         }
-        if(WIFEXITED(wstatus)){
+        if(WEXITSTATUS(wstatus) != 0){
             printf("exited, status=%d\n", WEXITSTATUS(wstatus));
-            perror("wstatus");
-            exit(EXIT_FAILURE);
+            perror("ERROR: wstatus");
+            return false;
         }
     }
 
