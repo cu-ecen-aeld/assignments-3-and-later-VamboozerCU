@@ -11,7 +11,17 @@ KERNEL_VERSION=v5.1.10
 BUSYBOX_VERSION=1_33_1
 FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
-CROSS_COMPILE=aarch64-none-linux-gnu-
+GNU_PATH=/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
+LIB_PATH=/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu
+CROSS_COMPILE=${GNU_PATH}/aarch64-none-linux-gnu-
+
+if [ -d $GNU_PATH ]
+then
+    : # NOP
+else
+    echo "GNU_PATH Does NOT Exist"
+    exit 1
+fi
 
 if [ $# -lt 1 ]
 then
@@ -34,7 +44,23 @@ if [ ! -e ${OUTDIR}/linux-stable/arch/${ARCH}/boot/Image ]; then
     echo "Checking out version ${KERNEL_VERSION}"
     git checkout ${KERNEL_VERSION}
 
-    # TODO: Add your kernel build steps here
+    echo "Apply Ubuntu V22.04 patch"
+    wget https://github.com/torvalds/linux/commit/e33a814e772cdc36436c8c188d8c42d019fda639.diff
+    git apply e33a814e772cdc36436c8c188d8c42d019fda639.diff
+
+    echo "Kernel build steps:"
+    #echo "Installing dependencies if not already installed..."
+    #/home/marshall/git/assignment-1-VamboozerCU/finder-app/dependencies.sh
+    echo "Deep clean kernal build tree"
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- mrproper # Deep clean kernal build tree
+    echo "Configure to default config => virtual arm"
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig # Configure to default config = virtual arm
+    echo "Build kernal image"
+    make -j4 ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- all # Build kernal image
+    #echo "Build any kernal modules"
+    #make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules # Build any kernal modules
+    #echo "Build the device tree"
+    #make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs # Build the device tree
 fi
 
 echo "Adding the Image in outdir"
@@ -47,7 +73,12 @@ then
     sudo rm  -rf ${OUTDIR}/rootfs
 fi
 
-# TODO: Create necessary base directories
+echo "Create necessary base directories"
+mkdir -p ${OUTDIR}/rootfs
+cd ${OUTDIR}/rootfs
+mkdir -p bin dev etc home lib proc sbin sys tmp usr var
+mkdir -p usr/bin usr/lib usr/sbin
+mkdir -p var/log
 
 cd "$OUTDIR"
 if [ ! -d "${OUTDIR}/busybox" ]
@@ -55,26 +86,53 @@ then
 git clone git://busybox.net/busybox.git
     cd busybox
     git checkout ${BUSYBOX_VERSION}
-    # TODO:  Configure busybox
+    echo "Configure busybox"
+    make distclean
+    make defconfig
+    #sudo make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- defconfig
 else
     cd busybox
 fi
 
-# TODO: Make and install busybox
+echo "Make and install busybox"
+#sudo make ARCH=arm CROSS_COMPILE=aarch64-none-linux-gnu- install
+#sudo make ARCH=arm CROSS_COMPILE=arm-unknown-linux-gnueabi- install
+#sudo make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-
+#sudo make -j4 install
+sudo make -j4 CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=arm64 CROSS_COMPILE=${GNU_PATH}/aarch64-none-linux-gnu- install
 
 echo "Library dependencies"
+cd ${OUTDIR}/rootfs
+echo "======Required for program interpreter======="
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
+echo "======Required for Shared library======="
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
+echo "======Required for sysroot======="
+${CROSS_COMPILE}gcc -print-sysroot 
+#ls -l lib/ld-linux-armhf.so.3
 
-# TODO: Add library dependencies to rootfs
+echo "Add library dependencies to rootfs"
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib/ld-linux-aarch64.so.1
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm.so.6 ${OUTDIR}/rootfs/lib/libm.so.6
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib/libresolv.so.2
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc.so.6 ${OUTDIR}/rootfs/lib/libc.so.6
 
-# TODO: Make device nodes
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/ld-2.31.so ${OUTDIR}/rootfs/lib/ld-2.31.so
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm-2.31.so ${OUTDIR}/rootfs/lib/libm-2.31.so
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv-2.31.so ${OUTDIR}/rootfs/lib/libresolv-2.31.so
+cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc-2.31.so ${OUTDIR}/rootfs/lib/libc-2.31.so
 
-# TODO: Clean and build the writer utility
+echo "Make device nodes"
+sudo mknod -m 666 dev/null c 1 3
+sudo mknod -m 666 dev/console c 5 1
 
-# TODO: Copy the finder related scripts and executables to the /home directory
-# on the target rootfs
+echo "TODO: Clean and build the writer utility"
 
-# TODO: Chown the root directory
+echo "TODO: Copy the finder related scripts and executables to the /home directory on the target rootfs"
 
-# TODO: Create initramfs.cpio.gz
+exit 1
+echo "TODO: Chown the root directory"
+${OUTDIR}/rootfs
+sudo chown -R root:root *
+
+echo "TODO: Create initramfs.cpio.gz"
