@@ -17,7 +17,8 @@ GNU_PATH=/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64
 LIB_PATH=/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu
 #CROSS_COMPILE=${GNU_PATH}/aarch64-none-linux-gnu-
 CROSS_COMPILE=aarch64-none-linux-gnu-
-FINDER_APP=/home/marshall/git/assignment-1-VamboozerCU/finder-app
+#FINDER_APP=/home/marshall/git/assignment-1-VamboozerCU/finder-app
+FINDER_APP=.
 
 if [ -d $FINDER_APP ]
 then
