@@ -29,7 +29,7 @@ fi
 
 echo "Booting the kernel"
 # See trick at https://superuser.com/a/1412150 to route serial port output to file
-qemu-system-aarch64 -m size=8192M -M virt -cpu cortex-a53 -nographic -smp 1 -kernel ${KERNEL_IMAGE} \
+qemu-system-aarch64 -m size=1024M -M virt -cpu cortex-a53 -nographic -smp 1 -kernel ${KERNEL_IMAGE} \
         -chardev stdio,id=char0,mux=on,logfile=${OUTDIR}/serial.log,signal=off \
         -serial chardev:char0 -mon chardev=char0\
         -append "rdinit=/bin/sh" -initrd ${INITRD_IMAGE}

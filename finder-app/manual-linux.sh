@@ -78,7 +78,7 @@ if [ ! -e ${ARCHIVE}/linux-stable/arch/${ARCH}/boot/Image ]; then
     #echo "Build any kernal modules"
     #make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- modules # Build any kernal modules
     #echo "Build the device tree"
-    #make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs # Build the device tree
+    make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- dtbs # Build the device tree
 fi
 
 echo "Adding the Image in outdir"
@@ -96,7 +96,7 @@ echo "Creating the staging directory for the root filesystem"
 echo "Create necessary base directories"
 mkdir -p ${OUTDIR}/rootfs
 cd ${OUTDIR}/rootfs
-mkdir -p bin dev etc home lib proc sbin sys tmp usr var
+mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir -p usr/bin usr/lib usr/sbin
 mkdir -p var/log
 
@@ -120,41 +120,46 @@ sudo make -j4 CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=arm64 CROSS_COMPILE=${GNU_PATH
 
 echo "Add library dependencies to rootfs"
 # arm-unknown-linux-gnueabi ??
+echo "======Required for sysroot======="
+#${CROSS_COMPILE}gcc -print-sysroot 
+#~/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/../aarch64-none-linux-gnu/libc
+#ls -l lib/ld-linux-aarch64.so.1
+export SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
+
 cd ${OUTDIR}/rootfs
 echo "======Required for program interpreter======="
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 # [Requesting program interpreter: /lib/ld-linux-aarch64.so.1]
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib/ld-linux-aarch64.so.1
-ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib/ld-linux-aarch64.so.1
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib/ld-linux-aarch64.so.1 ${OUTDIR}/rootfs/lib/ld-linux-aarch64.so.1
+#ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib/ld-linux-aarch64.so.1
 # ld-linux-aarch64.so.1 -> ../lib64/ld-2.31.so
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/ld-2.31.so ${OUTDIR}/rootfs/lib/ld-2.31.so
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/ld-2.31.so ${OUTDIR}/rootfs/lib/ld-2.31.so
 
 echo "======Required for Shared library======="
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 # 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]
 # 0x0000000000000001 (NEEDED)             Shared library: [libresolv.so.2]
 # 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm.so.6 ${OUTDIR}/rootfs/lib/libm.so.6
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib/libresolv.so.2
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc.so.6 ${OUTDIR}/rootfs/lib/libc.so.6
-ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm.so.6
-ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv.so.2
-ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc.so.6
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm.so.6 ${OUTDIR}/rootfs/lib64/libm.so.6
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv.so.2 ${OUTDIR}/rootfs/lib64/libresolv.so.2
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc.so.6 ${OUTDIR}/rootfs/lib64/libc.so.6
+#ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm.so.6
+#ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv.so.2
+#ls -l ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc.so.6
 #~/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64/libm.so.6 -> libm-2.31.so
 #~/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64/libresolv.so.2 -> libresolv-2.31.so
 #~/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/libc/lib64/libc.so.6 -> libc-2.31.so
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm-2.31.so ${OUTDIR}/rootfs/lib/libm-2.31.so
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv-2.31.so ${OUTDIR}/rootfs/lib/libresolv-2.31.so
-cp -a ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc-2.31.so ${OUTDIR}/rootfs/lib/libc-2.31.so
-
-echo "======Required for sysroot======="
-${CROSS_COMPILE}gcc -print-sysroot 
-#~/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/../aarch64-none-linux-gnu/libc
-#ls -l lib/ld-linux-aarch64.so.1
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libm-2.31.so ${OUTDIR}/rootfs/lib64/libm-2.31.so
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libresolv-2.31.so ${OUTDIR}/rootfs/lib64/libresolv-2.31.so
+cp -aL ${LIB_PATH}/aarch64-none-linux-gnu/libc/lib64/libc-2.31.so ${OUTDIR}/rootfs/lib64/libc-2.31.so
 
 echo "Make device nodes"
 sudo mknod -m 666 dev/null c 1 3
 sudo mknod -m 666 dev/console c 5 1
+
+#echo "Installing modules"
+#cd ${ARCHIVE}/linux-stable
+#make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH=${OUTDIR}/rootfs modules_install
 
 echo "Clean and build the writer utility"
 cd ${FINDER_APP}
@@ -162,17 +167,13 @@ make clean
 make all
 
 echo "Copy the finder related scripts and executables to the /home directory on the target rootfs"
-cd
-cp -a ${FINDER_APP} ${OUTDIR}/rootfs/home/finder-app
-cd ${OUTDIR}/rootfs/home/finder-app
-rm manual-linux.sh
-rm -rf conf
-mkdir -p ${OUTDIR}/rootfs/home/finder-app/conf
-cp ${FINDER_APP}/conf/assignment.txt ${OUTDIR}/rootfs/home/finder-app/conf/assignment.txt
-cp ${FINDER_APP}/conf/username.txt ${OUTDIR}/rootfs/home/finder-app/conf/username.txt
-
-echo "Copy the autorun-qemu.sh script into the outdir/rootfs/home directory"
-cp ${FINDER_APP}/autorun-qemu.sh ${OUTDIR}/rootfs/home/autorun-qemu.sh
+cp ${FINDER_APP}/writer ${OUTDIR}/rootfs/home
+cp ${FINDER_APP}/finder.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP}/finder-test.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP}/autorun-qemu.sh ${OUTDIR}/rootfs/home
+mkdir -p ${OUTDIR}/rootfs/home/conf
+cp ${FINDER_APP}/conf/assignment.txt ${OUTDIR}/rootfs/home/conf/assignment.txt
+cp ${FINDER_APP}/conf/username.txt ${OUTDIR}/rootfs/home/conf/username.txt
 
 echo "Chown the root directory"
 cd ${OUTDIR}/rootfs
@@ -181,11 +182,14 @@ sudo chown -R root:root *
 #  while tailing the system log for io error messages."
 
 echo "Create initramfs.cpio"
-cd ${OUTDIR}
+#cd ${OUTDIR}
 rm -f initramfs.cpio.gz
 #find . -depth | cpio -ov > initramfs.cpio
-find rootfs -depth | cpio -o > initramfs.cpio # add -v for debugging
 #find . -name Image | cpio -oA -F initramfs.cpio # add -v for debugging
+#find rootfs -depth | cpio -o --owner root:root > initramfs.cpio # add -v for debugging
+cd ${OUTDIR}/rootfs
+find . | cpio -H newc -ov --owner root:root > ../initramfs.cpio
+cd ..
 
 echo "Create initramfs.cpio.gz"
 #gzip -k initramfs.cpio # -k to keep initramfs.cpio
