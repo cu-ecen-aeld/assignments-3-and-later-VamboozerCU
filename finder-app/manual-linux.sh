@@ -102,7 +102,7 @@ else
 fi
 
 echo "Make and install busybox"
-sudo make -j4 CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu- install
+sudo make -j4 CONFIG_PREFIX=${OUTDIR}/rootfs ARCH=arm64 CROSS_COMPILE=${SYSROOT}/../../bin/aarch64-none-linux-gnu- install
 
 echo "Add library dependencies to rootfs"
 # arm-unknown-linux-gnueabi ??
@@ -110,7 +110,6 @@ echo "======Required for sysroot======="
 #${CROSS_COMPILE}gcc -print-sysroot 
 #~/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/../aarch64-none-linux-gnu/libc
 #ls -l lib/ld-linux-aarch64.so.1
-export SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
 
 cd ${OUTDIR}/rootfs
 echo "======Required for program interpreter======="
