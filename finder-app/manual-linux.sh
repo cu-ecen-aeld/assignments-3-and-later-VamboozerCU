@@ -23,7 +23,7 @@ if [ -d $FINDER_APP ]
 then
     : # NOP
 else
-    echo "FINDER_APP Does NOT Exist"
+    echo "FINDER_APP Does NOT Exist ${FINDER_APP}"
     exit 1
 fi
 
