@@ -7,24 +7,23 @@ set -u
 export PATH=$PATH:/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
 
 OUTDIR=/tmp/aeld
-ARCHIVE=~/Documents/ECEA5305_LinuxSystemProgrammingIntroToBuildroot/assign3-2
+FINDER_APP_DIR=$(realpath $(dirname $0))
+#ARCHIVE=~/Documents/ECEA5305_LinuxSystemProgrammingIntroToBuildroot/assign3-2
+ARCHIVE=${FINDER_APP_DIR}/../../../Documents/ECEA5305_LinuxSystemProgrammingIntroToBuildroot/assign3-2
 KERNEL_REPO=git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
 KERNEL_VERSION=v5.1.10
 BUSYBOX_VERSION=1_33_1
-FINDER_APP_DIR=$(realpath $(dirname $0))
 ARCH=arm64
-GNU_PATH=/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
-LIB_PATH=/home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu
+GNU_PATH=${FINDER_APP_DIR}/../../../Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
+LIB_PATH=${FINDER_APP_DIR}/../../../Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu
 #CROSS_COMPILE=${GNU_PATH}/aarch64-none-linux-gnu-
 CROSS_COMPILE=aarch64-none-linux-gnu-
-#FINDER_APP=/home/marshall/git/assignment-1-VamboozerCU/finder-app
-FINDER_APP=.
 
-if [ -d $FINDER_APP ]
+if [ -d $FINDER_APP_DIR ]
 then
     : # NOP
 else
-    echo "FINDER_APP Does NOT Exist ${FINDER_APP}"
+    echo "FINDER_APP_DIR Does NOT Exist ${FINDER_APP_DIR}"
     exit 1
 fi
 
@@ -32,7 +31,23 @@ if [ -d $ARCHIVE ]
 then
     : # NOP
 else
-    echo "ARCHIVE Does NOT Exist"
+    echo "ARCHIVE Does NOT Exist ${ARCHIVE}"
+    exit 1
+fi
+
+if [ -d $GNU_PATH ]
+then
+    : # NOP
+else
+    echo "GNU_PATH Does NOT Exist ${GNU_PATH}"
+    exit 1
+fi
+
+if [ -d $LIB_PATH ]
+then
+    : # NOP
+else
+    echo "LIB_PATH Does NOT Exist ${LIB_PATH}"
     exit 1
 fi
 
@@ -163,18 +178,18 @@ sudo mknod -m 666 dev/console c 5 1
 #make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} INSTALL_MOD_PATH=${OUTDIR}/rootfs modules_install
 
 echo "Clean and build the writer utility"
-cd ${FINDER_APP}
+cd ${FINDER_APP_DIR}
 make clean
 make all
 
 echo "Copy the finder related scripts and executables to the /home directory on the target rootfs"
-cp ${FINDER_APP}/writer ${OUTDIR}/rootfs/home
-cp ${FINDER_APP}/finder.sh ${OUTDIR}/rootfs/home
-cp ${FINDER_APP}/finder-test.sh ${OUTDIR}/rootfs/home
-cp ${FINDER_APP}/autorun-qemu.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/writer ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/finder.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/finder-test.sh ${OUTDIR}/rootfs/home
+cp ${FINDER_APP_DIR}/autorun-qemu.sh ${OUTDIR}/rootfs/home
 mkdir -p ${OUTDIR}/rootfs/home/conf
-cp ${FINDER_APP}/conf/assignment.txt ${OUTDIR}/rootfs/home/conf/assignment.txt
-cp ${FINDER_APP}/conf/username.txt ${OUTDIR}/rootfs/home/conf/username.txt
+cp ${FINDER_APP_DIR}/conf/assignment.txt ${OUTDIR}/rootfs/home/conf/assignment.txt
+cp ${FINDER_APP_DIR}/conf/username.txt ${OUTDIR}/rootfs/home/conf/username.txt
 
 echo "Chown the root directory"
 cd ${OUTDIR}/rootfs
