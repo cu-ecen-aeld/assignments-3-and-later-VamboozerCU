@@ -10,13 +10,13 @@ OBJS := $(SRC:.c=.o)
 
 all: $(TARGET)
 #make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- generic-v8-defconfig
-	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
+#	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
 #CROSS_COMPILE=aarch64-none-linux-gnu-
 #$(TARGET): $(OBJS)
 #	make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-
 
-#$(TARGET) : $(OBJS)
-#	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
+$(TARGET) : $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 clean:
 	-rm -f *.o $(TARGET) *.elf *.map
