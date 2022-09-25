@@ -9,13 +9,13 @@ OBJS := $(SRC:.c=.o)
 #LFLAGS = -Wall
 
 # ==== Use this to compile natively ====
-#all:
-#$(TARGET) : $(OBJS)
-#	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
+all:
+$(TARGET) : $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 # ==== Use this to compile for arm64 ====
-all: $(TARGET)
-	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
+#all: $(TARGET)
+#	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
 
 clean:
 	-rm -f *.o $(TARGET) *.elf *.map
