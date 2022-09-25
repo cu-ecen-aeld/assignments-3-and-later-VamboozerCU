@@ -8,15 +8,14 @@ OBJS := $(SRC:.c=.o)
 #CROSS_COMPILE = aarch64-none-linux-gnu-
 #LFLAGS = -Wall
 
-all: $(TARGET)
-#make ARCH=arm CROSS_COMPILE=aarch64-linux-gnu- generic-v8-defconfig
-#	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
-#CROSS_COMPILE=aarch64-none-linux-gnu-
-#$(TARGET): $(OBJS)
-#	make ARCH=arm64 CROSS_COMPILE=aarch64-none-linux-gnu-
+# ==== Use this to compile natively ====
+#all:
+#$(TARGET) : $(OBJS)
+#	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
-$(TARGET) : $(OBJS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
+# ==== Use this to compile for arm64 ====
+all: $(TARGET)
+	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
 
 clean:
 	-rm -f *.o $(TARGET) *.elf *.map
