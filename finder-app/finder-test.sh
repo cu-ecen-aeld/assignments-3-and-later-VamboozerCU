@@ -56,10 +56,12 @@ fi
 
 for i in $( seq 1 $NUMFILES)
 do
-	${SCRIPT_DIR}/writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	# ${SCRIPT_DIR}/writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(${SCRIPT_DIR}/finder.sh "$WRITEDIR" "$WRITESTR")
+# OUTPUTSTRING=$(${SCRIPT_DIR}/finder.sh "$WRITEDIR" "$WRITESTR")
+OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 
 echo "${OUTPUTSTRING}" > /tmp/assignment4-result.txt
 
