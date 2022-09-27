@@ -10,10 +10,24 @@ OBJS := $(SRC:.c=.o)
 #CC = gcc
 
 # ==== Use this to compile natively ====
-all:
+#.PHONY : all cleantarget clean
+.PHONY : all
+all : $(TARGET)
+	echo "RUNNING ALL"
+
+#.PHONY : cleantarget
+#cleantarget:
+#	echo "CLEANTARGET..."
+#	-rm -f $(TARGET).o $(TARGET) $(TARGET).elf $(TARGET).map
+#	echo "CLEANTARGET DONE"
+
 $(TARGET) : $(OBJS)
+	echo "BUILDING $(TARGET)..."
 #	$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(TARGET) $(LDFLAGS)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
+	echo "BUILDING $(TARGET) DONE"
+
+
 
 #$(OBJS):
 #	$(CC) -c $(SRC)
@@ -32,8 +46,11 @@ $(TARGET) : $(OBJS)
 #	$(CC) $(SRC) -o $(TARGET)
 
 #writer.o:
-$(OBJS):
-	$(CC) -c $(SRC)
+#$(OBJS):
+#	$(CC) -c $(SRC)
 
+.PHONY: clean # redundant, but makes builds more effecient
 clean:
+	echo "CLEANING..."
 	-rm -f *.o $(TARGET) *.elf *.map
+	echo "CLEANING DONE"
