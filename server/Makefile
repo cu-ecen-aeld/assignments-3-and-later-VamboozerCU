@@ -7,17 +7,18 @@ CFLAGS += -Wall -Wextra #-Werror
 
 # ==== Use this to have Buildroot compile for us ====
 .PHONY : all
-all : $(TARGET)
-	@echo "RUNNING ALL"
+#all : $(TARGET)
+#	@echo "RUNNING ALL"
 
-$(TARGET) : $(OBJS)
-	@echo "BUILDING $(TARGET)..."
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
-	@echo "BUILDING $(TARGET) DONE"
+#$(TARGET) : $(OBJS)
+#	@echo "BUILDING $(TARGET)..."
+#	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
+#	@echo "BUILDING $(TARGET) DONE"
 
 # ==== Use this to compile natively for native architecture ====
-.PHONY : native
-native:
+#.PHONY : native
+#native:
+all:
 	@echo "RUNNING NATIVE $(TARGET) BUILD..."
 #	gcc $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
 	gcc $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
