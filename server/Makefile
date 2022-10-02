@@ -21,7 +21,7 @@ CFLAGS += -Wall -Wextra #-Werror
 all:
 	@echo "RUNNING NATIVE $(TARGET) BUILD..."
 #	gcc $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
-	gcc $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
 	@echo "BUILDING NATIVE $(TARGET) DONE"
 
 # ==== Use this to compile natively for foreign ARM64 architecture ====
