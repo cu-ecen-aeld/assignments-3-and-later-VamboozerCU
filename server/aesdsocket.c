@@ -8,6 +8,8 @@
 #include <netdb.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #define UNUSED(x) (void)(x)
 
@@ -43,9 +45,22 @@ void TERMSignalHandler(int sig){
 }
 
 int main(int argc, char**argv){
-    if((argc-1) != 0){
-        printf("argc: %d; Only 0 arguments are acceptable.\n", (argc-1));
+    const char *daemonMode = argv[1];
+    bool bDaemonMode = false;
+
+    if( ((argc-1) != 0) && ((argc-1) != 1) ){
+        printf("argc: %d; Only 0 or 1 arguments are acceptable\n", (argc-1));
         return -1;
+    }
+    else if((argc-1) == 1){
+        if(strcmp(daemonMode, "-d") == 0){
+            printf("Running aesdsocket as daemon\n");
+            bDaemonMode = true;
+        }
+        else{
+            printf("ERROR: Unacceptable aesdsocket argument: %s\n", daemonMode);
+            return -1;
+        }
     }
     UNUSED(argv);
     signal(SIGINT, INTSignalHandler);
@@ -110,6 +125,40 @@ int main(int argc, char**argv){
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
         return -1;
     } 
+
+    if(bDaemonMode && (nbind == 0)){
+        pid_t cpid;
+        int wstatus;
+
+        cpid = fork(); // split into 2 processes
+
+        if(cpid < 0){
+            syslog(LOG_ERR, "ERROR: aesdsocket failed to fork\n");
+            printf("ERROR: aesdsocket failed to fork\n");
+            closelog();
+            shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+            return -1;
+        }
+        else if(cpid > 0){ // Parent Process Code
+            //printf("Hello from Parent\n");
+            if(wait(&wstatus) == -1){
+                perror("wait");
+                closelog();
+                shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+                return -1;
+            }
+            if(WEXITSTATUS(wstatus) != 0){
+                printf("exited, status=%d\n", WEXITSTATUS(wstatus));
+                perror("wstatus");
+                closelog();
+                shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+                return -1;
+            }
+        }
+        else{ // (cpid == 0) -> Child Process Code
+            printf("Hello from aesdsocket daemon\n");
+        }
+    }
 
     char *clientRecvBuffer = (char*)malloc(512);
     char *clientSendBuffer = (char*)malloc(512);
