@@ -1,8 +1,9 @@
-*.o
-writer
 Test_*_Runner.c
 build/
 crosstool-ng
 aesd-build
 .vscode/
 test.sh.log
+*.o
+writer
+aesdsocket
