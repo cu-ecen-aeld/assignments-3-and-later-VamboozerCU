@@ -3,7 +3,8 @@
 TARGET = aesdsocket
 SRC := aesdsocket.c
 OBJS := $(SRC:.c=.o) # Generate .o files from .c files
-CFLAGS += -Wall -Wextra #-Werror
+CFLAGS += -g -Wall -Wextra #-Werror
+CC = gcc
 
 # ==== Use this to have Buildroot compile for us ====
 .PHONY : all
@@ -22,6 +23,7 @@ all:
 	@echo "RUNNING NATIVE $(TARGET) BUILD..."
 #	gcc $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
 	$(CC) $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
+#	$(CC) -c $(OBJS) $(SRC) $(CFLAGS)
 	@echo "BUILDING NATIVE $(TARGET) DONE"
 
 # ==== Use this to compile natively for foreign ARM64 architecture ====

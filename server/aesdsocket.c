@@ -128,7 +128,7 @@ int main(int argc, char**argv){
 
     if(bDaemonMode && (nbind == 0)){
         pid_t cpid;
-        int wstatus;
+        //int wstatus;
 
         cpid = fork(); // split into 2 processes
 
@@ -141,6 +141,7 @@ int main(int argc, char**argv){
         }
         else if(cpid > 0){ // Parent Process Code
             //printf("Hello from Parent\n");
+            /*
             if(wait(&wstatus) == -1){
                 perror("wait");
                 closelog();
@@ -154,9 +155,26 @@ int main(int argc, char**argv){
                 shutdown(nsocket, SHUT_RDWR); // closing the listening socket
                 return -1;
             }
+            */
+            //closelog();
+            //shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+            exit(0);
         }
         else{ // (cpid == 0) -> Child Process Code
             printf("Hello from aesdsocket daemon\n");
+            // Create new session and process group to prevent 
+            // terminal signals from mixing with the daemon
+            //if(setsid() == -1){
+            //    syslog(LOG_ERR, "ERROR: Failed to create a new session and process group\n");
+            //    printf("ERROR: Failed to create a new session and process group\n");
+            //    exit(1);
+            //}
+            //Set the working directory to the root directory
+            //if(chdir("/") == -1){
+            //    syslog(LOG_ERR, "ERROR: Failed to change working directory\n");
+            //    printf("ERROR: Failed to change working directory\n");
+            //    exit(1);
+            //}
         }
     }
 
