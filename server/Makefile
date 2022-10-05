@@ -4,26 +4,22 @@ TARGET = aesdsocket
 SRC := aesdsocket.c
 OBJS := $(SRC:.c=.o) # Generate .o files from .c files
 CFLAGS += -g -Wall -Wextra #-Werror
-CC = gcc
 
 # ==== Use this to have Buildroot compile for us ====
 .PHONY : all
-#all : $(TARGET)
-#	@echo "RUNNING ALL"
+all : $(TARGET)
+	@echo "RUNNING ALL"
 
-#$(TARGET) : $(OBJS)
-#	@echo "BUILDING $(TARGET)..."
-#	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
-#	@echo "BUILDING $(TARGET) DONE"
+$(TARGET) : $(OBJS)
+	@echo "BUILDING $(TARGET)..."
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
+	@echo "BUILDING $(TARGET) DONE"
 
 # ==== Use this to compile natively for native architecture ====
-#.PHONY : native
-#native:
-all:
+.PHONY : native
+native:
 	@echo "RUNNING NATIVE $(TARGET) BUILD..."
-#	gcc $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
-#	$(CC) -c $(OBJS) $(SRC) $(CFLAGS)
+	gcc $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
 	@echo "BUILDING NATIVE $(TARGET) DONE"
 
 # ==== Use this to compile natively for foreign ARM64 architecture ====
@@ -31,7 +27,7 @@ all:
 arm64:
 	@echo "RUNNING ARM64 $(TARGET) BUILD..."
 #	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
-	aarch64-none-linux-gnu-gcc $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
+	aarch64-none-linux-gnu-gcc $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
 	@echo "BUILDING ARM64 $(TARGET) DONE"
 
 # ==== Use default ====

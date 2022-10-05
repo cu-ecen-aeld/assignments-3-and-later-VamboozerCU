@@ -265,7 +265,8 @@ int main(int argc, char**argv){
                     ch = '\0';
                     for(ngetline = 0; (ngetline<(512-1)) && (ch != '\n'); ngetline++){
                         ch = fgetc(fout); // reading the file
-                        if(ch == EOF){
+                        //if(ch == EOF){
+                        if(feof(fout)){
                             break;
                         }
                         clientSendBuffer[ngetline] = ch;
