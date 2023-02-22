@@ -14,7 +14,14 @@
 #include <sys/queue.h>
 #include <time.h>
 
+//#define _BSD_SOURCE
+#define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
+	for ((var) = SLIST_FIRST((head));				\
+	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
+	    (var) = (tvar))
+
 #define UNUSED(x) (void)(x)
+int error = -1;
 
 void INTSignalHandler(int sig);
 void TERMSignalHandler(int sig);
@@ -31,7 +38,7 @@ struct thread_info {
     SLIST_ENTRY(thread_info) entries;
     bool bThreadComplete;
     int client;
-}
+};
 
 SLIST_HEAD(thread_list, thread_info) threads = SLIST_HEAD_INITIALIZER(threads);
 
@@ -44,6 +51,8 @@ void  INTSignalHandler(int sig){
     signal(SIGINT, SIG_IGN); // Ignore SIGINT signal (mask)
     signal(SIGTERM, SIG_IGN); // Ignore SIGTERM signal (mask)
     shutdown(nSOCKET, SHUT_RDWR); // closing the listening socket
+    pthread_mutex_destroy(&mutex);
+    fclose(fout);
     bSIGINT = true;
 }
 
@@ -56,22 +65,30 @@ void TERMSignalHandler(int sig){
     signal(SIGINT, SIG_IGN); // Ignore SIGINT signal (mask)
     signal(SIGTERM, SIG_IGN); // Ignore SIGTERM signal (mask)
     shutdown(nSOCKET, SHUT_RDWR); // closing the listening socket
+    pthread_mutex_destroy(&mutex);
+    fclose(fout);
     bSIGTERM = true;
 }
 
 void* write_timestamp(void *arg){
+    UNUSED(arg);
     time_t current_time;
     struct tm *time_info;
-    char timestamp[80];
+    char timestamp[128];
 
+    sleep(10);
     while( !(bSIGINT || bSIGTERM) ){
         time(&current_time);
         time_info = localtime(&current_time);
         strftime(timestamp, sizeof(timestamp), "timestamp:%a, %d %b %Y %T %z\n", time_info);
+        
         pthread_mutex_lock(&mutex);
-        fprintf(fout, "%s", timestamp);
-        fflush(fout);
+        fseek(fout, curLoc, SEEK_SET);
+        fprintf(fout, "%s\n", timestamp);
+        curLoc = (int)ftell(fout)-1;
+        //fflush(fout);
         pthread_mutex_unlock(&mutex);
+
         sleep(10);
     }
     pthread_exit(NULL);
@@ -85,11 +102,11 @@ void* thread_function(void* arg){
     int nrecv, ngetline, nsend;
 
     pthread_mutex_lock(&mutex);
-    struct thread_info* thread_info = arg;
-    int client = thread_info->client;
+    struct thread_info* threadInfo = arg;
+    int client = threadInfo->client;
     pthread_mutex_unlock(&mutex);
 
-    printf("Thread %ld has started processing %d client\n", pthread_self(), client);
+    printf("Thread %ld has started processing client %d\n", pthread_self(), client);
 
     while( !(bSIGINT || bSIGTERM) ){
         //printf("------------------------\n");
@@ -107,6 +124,7 @@ void* thread_function(void* arg){
                 fseek(fout, curLoc, SEEK_SET);
                 fprintf(fout, "%s\n", clientRecvBuffer);
                 curLoc = (int)ftell(fout)-1;
+                //fflush(fout);
                 pthread_mutex_unlock(&mutex);
             }
         } while(NULL == ptr);
@@ -120,11 +138,11 @@ void* thread_function(void* arg){
                 shutdown(client, SHUT_RDWR); // closing the connected socket
                 free(clientRecvBuffer);
                 free(clientSendBuffer);
-                syslog(LOG_ERR, "ERROR: aesdsocket failed to recv from client socket\n");
-                printf("ERROR: aesdsocket failed to recv from client socket\n");
-                syslog(LOG_DEBUG, "Closed connection from %d\n", client);
-                printf("Closed connection from %d\n", client);
-                pthread_exit(-1);
+                syslog(LOG_ERR, "ERROR: Thread %ld aesdsocket failed to recv from client socket\n", pthread_self());
+                printf("ERROR: Thread %ld aesdsocket failed to recv from client socket\n", pthread_self());
+                syslog(LOG_DEBUG, "Thread %ld Closed connection from %d\n", pthread_self(), client);
+                printf("Thread %ld Closed connection from %d\n", pthread_self(), client);
+                pthread_exit(&error);
             }
         }
         else{ // We got some good data from a client
@@ -134,6 +152,7 @@ void* thread_function(void* arg){
             fseek(fout, curLoc, SEEK_SET);
             fprintf(fout, "%s\n", clientRecvBuffer);
             curLoc = (int)ftell(fout)-1;
+            //fflush(fout);
 
             // Start reading the entire file back to the client
             fseek(fout, 0, SEEK_SET);
@@ -153,12 +172,12 @@ void* thread_function(void* arg){
                     nsend = (int)send(client, clientSendBuffer, ngetline, 0); // sockfd, buf, len, flags
                 }
                 if(nsend == -1){
-                    syslog(LOG_ERR, "ERROR: aesdsocket failed to send to client socket\n");
-                    printf("ERROR: aesdsocket failed to send to client socket\n");
+                    syslog(LOG_ERR, "ERROR: Thread %ld aesdsocket failed to send to client socket\n", pthread_self());
+                    printf("ERROR: Thread %ld aesdsocket failed to send to client socket\n", pthread_self());
                     shutdown(client, SHUT_RDWR); // closing the connected socket
                     free(clientRecvBuffer);
                     free(clientSendBuffer);               
-                    pthread_exit(-1);
+                    pthread_exit(&error);
                 }
             } while(!feof(fout));
             pthread_mutex_unlock(&mutex);
@@ -167,12 +186,11 @@ void* thread_function(void* arg){
     shutdown(client, SHUT_RDWR); // closing the connected socket
     free(clientRecvBuffer);
     free(clientSendBuffer);
-    syslog(LOG_DEBUG, "Closed connection from %d\n", client);
-    printf("Closed connection from %d\n", client);
-    printf("aesdsocket complete\n");
+    syslog(LOG_DEBUG, "Thread %ld Completed connection from %d\n", pthread_self(), client);
+    printf("Thread %ld Completed connection from %d\n", pthread_self(), client);
 
     pthread_mutex_lock(&mutex);
-    thread_info->bThreadComplete = true;
+    threadInfo->bThreadComplete = true;
     pthread_mutex_unlock(&mutex);
 
     pthread_exit(NULL);
@@ -190,6 +208,7 @@ int main(int argc, char**argv){
 
     if( ((argc-1) != 0) && ((argc-1) != 1) ){
         printf("argc: %d; Only 0 or 1 arguments are acceptable\n", (argc-1));
+        fclose(fout);
         return -1;
     }
     else if((argc-1) == 1){
@@ -199,6 +218,7 @@ int main(int argc, char**argv){
         }
         else{
             printf("ERROR: Unacceptable aesdsocket argument: %s\n", daemonMode);
+            fclose(fout);
             return -1;
         }
     }
@@ -221,6 +241,8 @@ int main(int argc, char**argv){
         printf("ERROR: aesdsocket failed on getaddrinfo. Returned %d\n", getaddr);
         closelog();
         freeaddrinfo(servinfo);
+        fclose(fout);
+        pthread_mutex_destroy(&mutex);
         return -1;
     }
     //printf("servinfo->ai_flags: %d\n", servinfo->ai_flags);
@@ -238,6 +260,8 @@ int main(int argc, char**argv){
         printf("ERROR: aesdsocket failed to set socket\n");
         closelog();
         freeaddrinfo(servinfo);
+        fclose(fout);
+        pthread_mutex_destroy(&mutex);
         return -1;
     }
     nSOCKET = nsocket;
@@ -249,6 +273,8 @@ int main(int argc, char**argv){
         printf("ERROR: aesdsocket failed to bind socket\n");
         closelog();
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+        fclose(fout);
+        pthread_mutex_destroy(&mutex);
         return -1;
     }
 
@@ -259,6 +285,8 @@ int main(int argc, char**argv){
         printf("ERROR: aesdsocket failed to setsockopt\n");
         closelog();
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+        fclose(fout);
+        pthread_mutex_destroy(&mutex);
         return -1;
     } 
 
@@ -273,6 +301,8 @@ int main(int argc, char**argv){
             printf("ERROR: aesdsocket failed to fork\n");
             closelog();
             shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+            fclose(fout);
+            pthread_mutex_destroy(&mutex);
             return -1;
         }
         else if(cpid > 0){ // Parent Process Code
@@ -321,12 +351,16 @@ int main(int argc, char**argv){
         closelog();
         remove("/var/tmp/aesdsocketdata.txt");
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+        fclose(fout);
+        pthread_mutex_destroy(&mutex);
         return -1;
     }
 
     struct thread_info* thread_info_i;
     pthread_t time_thread;
     pthread_create(&time_thread, NULL, write_timestamp, NULL);
+
+    printf("sizeof(struct thread_info) = %ld\n", sizeof(struct thread_info));
 
     while( !(bSIGINT || bSIGTERM) ){
         printf("aesdsocket server ready to accept a client...\n");
@@ -335,7 +369,12 @@ int main(int argc, char**argv){
             syslog(LOG_ERR, "ERROR: aesdsocket failed to accept socket\n");
             printf("ERROR: aesdsocket failed to accept socket. ERROR: %d\n", client);
             closelog();
+            fclose(fout);
             remove("/var/tmp/aesdsocketdata.txt");
+            shutdown(nsocket, SHUT_RDWR); // closing the listening socket
+            pthread_join(time_thread, NULL);
+            pthread_mutex_destroy(&mutex);
+            shutdown(client, SHUT_RDWR); // closing the connected socket
             shutdown(nsocket, SHUT_RDWR); // closing the listening socket
             return -1;
         }
@@ -346,7 +385,7 @@ int main(int argc, char**argv){
             struct thread_info* thread_info = malloc(sizeof(struct thread_info));
             thread_info->bThreadComplete = false;
             thread_info->client = client;
-            pthread_create(&thread_info->thread_id, NULL, thread_function, &thread_info);
+            pthread_create(&thread_info->thread_id, NULL, thread_function, (void *)thread_info);
 
             pthread_mutex_lock(&mutex);
             SLIST_INSERT_HEAD(&threads, thread_info, entries);
@@ -360,7 +399,6 @@ int main(int argc, char**argv){
             }
             pthread_mutex_unlock(&mutex);
         }
-
     }
     pthread_join(time_thread, NULL);
     fclose(fout);
