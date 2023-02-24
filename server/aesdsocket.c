@@ -26,6 +26,7 @@ int error = -1;
 void INTSignalHandler(int sig);
 void TERMSignalHandler(int sig);
 
+// Globals
 bool bSIGINT = false;
 bool bSIGTERM = false;
 int nSOCKET;
