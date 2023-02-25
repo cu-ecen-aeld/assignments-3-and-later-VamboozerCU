@@ -13,6 +13,7 @@
 #include <pthread.h>
 #include <sys/queue.h>
 #include <time.h>
+#include <errno.h>
 
 //#define _BSD_SOURCE
 #define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
@@ -267,11 +268,31 @@ int main(int argc, char**argv){
     }
     nSOCKET = nsocket;
 
-    nbind = bind(nsocket, servinfo->ai_addr, servinfo->ai_addrlen); // sockfd, addr, addrlen
+    do {
+        nbind = bind(nsocket, servinfo->ai_addr, servinfo->ai_addrlen); // sockfd, addr, addrlen
+        if (nbind == -1 && errno == EADDRINUSE) {
+            // Socket is busy...
+            // Close the existing socket and try again
+            close(nsocket);
+            sleep(1);
+            nsocket = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+            if (nsocket == -1) {
+                syslog(LOG_ERR, "ERROR: aesdsocket failed to set socket\n");
+                printf("ERROR: aesdsocket failed to set socket\n");
+                closelog();
+                freeaddrinfo(servinfo);
+                fclose(fout);
+                pthread_mutex_destroy(&mutex);
+                return -1;
+            }
+            nSOCKET = nsocket;
+        }
+    } while (nbind == -1 && errno == EADDRINUSE);
+    
     freeaddrinfo(servinfo);
     if(nbind != 0){
         syslog(LOG_ERR, "ERROR: aesdsocket failed to bind socket\n");
-        printf("ERROR: aesdsocket failed to bind socket\n");
+        printf("ERROR: aesdsocket failed to bind socket.\n   errno: %s\n", strerror(errno));
         closelog();
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
         fclose(fout);
@@ -372,7 +393,6 @@ int main(int argc, char**argv){
             closelog();
             fclose(fout);
             remove("/var/tmp/aesdsocketdata.txt");
-            shutdown(nsocket, SHUT_RDWR); // closing the listening socket
             pthread_join(time_thread, NULL);
             pthread_mutex_destroy(&mutex);
             shutdown(client, SHUT_RDWR); // closing the connected socket
