@@ -3,7 +3,17 @@
 TARGET = aesdsocket
 SRC := aesdsocket.c
 OBJS := $(SRC:.c=.o) # Generate .o files from .c files
-CFLAGS += -g -Wall -Wextra #-Werror
+#CFLAGS += -g -Wall -Wextra #-Werror
+
+ifeq ($(CC),)
+	CC = $(CROSS_COMPILE)gcc
+endif
+ifeq ($(CFLAGS),)
+	CFLAGS += -g -Wall -Wextra
+endif
+ifeq ($(LDFLAGS),)
+	LDFLAGS = -pthread -lrt
+endif
 
 # ==== Use this to have Buildroot compile for us ====
 .PHONY : all
