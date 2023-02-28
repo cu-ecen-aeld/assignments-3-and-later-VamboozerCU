@@ -1,7 +1,7 @@
 //#include "aesdsocket.h" Does NOT yet exist
 #include <stdio.h>
 #include <stdlib.h>
-#include <syslog.h>
+//#include <syslog.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -46,7 +46,7 @@ SLIST_HEAD(thread_list, thread_info) threads = SLIST_HEAD_INITIALIZER(threads);
 
 void  INTSignalHandler(int sig){
     UNUSED(sig);
-    syslog(LOG_DEBUG, "\nCaught signal, exiting\n");
+    //syslog(LOG_DEBUG, "\nCaught signal, exiting\n");
     printf("\nCaught signal, exiting\n");
     
     // Mask Handlers until exit to prevent reentrancy
@@ -60,7 +60,7 @@ void  INTSignalHandler(int sig){
 
 void TERMSignalHandler(int sig){
     UNUSED(sig);
-    syslog(LOG_DEBUG, "\nCaught signal, exiting\n");
+    //syslog(LOG_DEBUG, "\nCaught signal, exiting\n");
     printf("\nCaught signal, exiting\n");
 
     // Mask Handlers until exit to prevent reentrancy
@@ -140,9 +140,9 @@ void* thread_function(void* arg){
                 shutdown(client, SHUT_RDWR); // closing the connected socket
                 free(clientRecvBuffer);
                 free(clientSendBuffer);
-                syslog(LOG_ERR, "ERROR: Thread %ld aesdsocket failed to recv from client socket\n", pthread_self());
+                //syslog(LOG_ERR, "ERROR: Thread %ld aesdsocket failed to recv from client socket\n", pthread_self());
                 printf("ERROR: Thread %ld aesdsocket failed to recv from client socket\n", pthread_self());
-                syslog(LOG_DEBUG, "Thread %ld Closed connection from %d\n", pthread_self(), client);
+                //syslog(LOG_DEBUG, "Thread %ld Closed connection from %d\n", pthread_self(), client);
                 printf("Thread %ld Closed connection from %d\n", pthread_self(), client);
                 pthread_exit(&error);
             }
@@ -174,7 +174,7 @@ void* thread_function(void* arg){
                     nsend = (int)send(client, clientSendBuffer, ngetline, 0); // sockfd, buf, len, flags
                 }
                 if(nsend == -1){
-                    syslog(LOG_ERR, "ERROR: Thread %ld aesdsocket failed to send to client socket\n", pthread_self());
+                    //syslog(LOG_ERR, "ERROR: Thread %ld aesdsocket failed to send to client socket\n", pthread_self());
                     printf("ERROR: Thread %ld aesdsocket failed to send to client socket\n", pthread_self());
                     shutdown(client, SHUT_RDWR); // closing the connected socket
                     free(clientRecvBuffer);
@@ -188,7 +188,7 @@ void* thread_function(void* arg){
     shutdown(client, SHUT_RDWR); // closing the connected socket
     free(clientRecvBuffer);
     free(clientSendBuffer);
-    syslog(LOG_DEBUG, "Thread %ld Completed connection from %d\n", pthread_self(), client);
+    //syslog(LOG_DEBUG, "Thread %ld Completed connection from %d\n", pthread_self(), client);
     printf("Thread %ld Completed connection from %d\n", pthread_self(), client);
 
     pthread_mutex_lock(&mutex);
@@ -227,7 +227,7 @@ int main(int argc, char**argv){
     UNUSED(argv);
     signal(SIGINT, INTSignalHandler);
     signal(SIGTERM, TERMSignalHandler);
-    openlog(NULL,0,LOG_USER); // init syslog
+    //openlog(NULL,0,LOG_USER); // init syslog
 
     int nsocket, nbind, getaddr, nlisten, client;
     struct addrinfo hints, *servinfo;
@@ -239,9 +239,9 @@ int main(int argc, char**argv){
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
     getaddr = getaddrinfo(NULL, "9000", &hints, &servinfo); // node, service(port), hints, res
     if(getaddr != 0){
-        syslog(LOG_ERR, "ERROR: aesdsocket failed on getaddrinfo. Returned %d\n", getaddr);
+        //syslog(LOG_ERR, "ERROR: aesdsocket failed on getaddrinfo. Returned %d\n", getaddr);
         printf("ERROR: aesdsocket failed on getaddrinfo. Returned %d\n", getaddr);
-        closelog();
+        //closelog();
         freeaddrinfo(servinfo);
         fclose(fout);
         pthread_mutex_destroy(&mutex);
@@ -258,9 +258,9 @@ int main(int argc, char**argv){
 
     nsocket = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol); // domain=IPv6, type=TCP, protocol=proper for type
     if(nsocket == -1){
-        syslog(LOG_ERR, "ERROR: aesdsocket failed to set socket\n");
+        //syslog(LOG_ERR, "ERROR: aesdsocket failed to set socket\n");
         printf("ERROR: aesdsocket failed to set socket\n");
-        closelog();
+        //closelog();
         freeaddrinfo(servinfo);
         fclose(fout);
         pthread_mutex_destroy(&mutex);
@@ -277,9 +277,9 @@ int main(int argc, char**argv){
             sleep(1);
             nsocket = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
             if (nsocket == -1) {
-                syslog(LOG_ERR, "ERROR: aesdsocket failed to set socket\n");
+                //syslog(LOG_ERR, "ERROR: aesdsocket failed to set socket\n");
                 printf("ERROR: aesdsocket failed to set socket\n");
-                closelog();
+                //closelog();
                 freeaddrinfo(servinfo);
                 fclose(fout);
                 pthread_mutex_destroy(&mutex);
@@ -291,9 +291,9 @@ int main(int argc, char**argv){
     
     freeaddrinfo(servinfo);
     if(nbind != 0){
-        syslog(LOG_ERR, "ERROR: aesdsocket failed to bind socket\n");
+        //syslog(LOG_ERR, "ERROR: aesdsocket failed to bind socket\n");
         printf("ERROR: aesdsocket failed to bind socket.\n   errno: %s\n", strerror(errno));
-        closelog();
+        //closelog();
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
         fclose(fout);
         pthread_mutex_destroy(&mutex);
@@ -303,9 +303,9 @@ int main(int argc, char**argv){
     // lose the pesky "Address already in use" error message
     int yes = 1;
     if (setsockopt(nsocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1){
-        syslog(LOG_ERR, "ERROR: aesdsocket failed to setsockopt\n");
+        //syslog(LOG_ERR, "ERROR: aesdsocket failed to setsockopt\n");
         printf("ERROR: aesdsocket failed to setsockopt\n");
-        closelog();
+        //closelog();
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
         fclose(fout);
         pthread_mutex_destroy(&mutex);
@@ -319,9 +319,9 @@ int main(int argc, char**argv){
         cpid = fork(); // split into 2 processes
 
         if(cpid < 0){
-            syslog(LOG_ERR, "ERROR: aesdsocket failed to fork\n");
+            //syslog(LOG_ERR, "ERROR: aesdsocket failed to fork\n");
             printf("ERROR: aesdsocket failed to fork\n");
-            closelog();
+            //closelog();
             shutdown(nsocket, SHUT_RDWR); // closing the listening socket
             fclose(fout);
             pthread_mutex_destroy(&mutex);
@@ -368,9 +368,9 @@ int main(int argc, char**argv){
 
     nlisten = listen(nsocket, SOMAXCONN); // sockfd, backlog(# of connections allowed)
     if((nlisten != 0) && !(bSIGINT || bSIGTERM)){
-        syslog(LOG_ERR, "ERROR: aesdsocket failed to listen socket\n");
+        //syslog(LOG_ERR, "ERROR: aesdsocket failed to listen socket\n");
         printf("ERROR: aesdsocket failed to listen socket\n");
-        closelog();
+        //closelog();
         remove("/var/tmp/aesdsocketdata.txt");
         shutdown(nsocket, SHUT_RDWR); // closing the listening socket
         fclose(fout);
@@ -388,9 +388,9 @@ int main(int argc, char**argv){
         printf("aesdsocket server ready to accept a client...\n");
         client = accept(nsocket, servinfo->ai_addr, &servinfo->ai_addrlen); // sockfd, addr, addrlen
         if((client < 0) && !(bSIGINT || bSIGTERM)){
-            syslog(LOG_ERR, "ERROR: aesdsocket failed to accept socket\n");
+            //syslog(LOG_ERR, "ERROR: aesdsocket failed to accept socket\n");
             printf("ERROR: aesdsocket failed to accept socket. ERROR: %d\n", client);
-            closelog();
+            //closelog();
             fclose(fout);
             remove("/var/tmp/aesdsocketdata.txt");
             pthread_join(time_thread, NULL);
@@ -400,7 +400,7 @@ int main(int argc, char**argv){
             return -1;
         }
         if(!(bSIGINT || bSIGTERM)){
-            syslog(LOG_DEBUG, "Accepted connection from %d\n", client);
+            //syslog(LOG_DEBUG, "Accepted connection from %d\n", client);
             printf("Accepted connection from %d\n", client);
 
             struct thread_info* thread_info = malloc(sizeof(struct thread_info));
@@ -426,7 +426,7 @@ int main(int argc, char**argv){
     remove("/var/tmp/aesdsocketdata.txt");
     shutdown(client, SHUT_RDWR); // closing the connected socket
     shutdown(nsocket, SHUT_RDWR); // closing the listening socket
-    closelog();
+    //closelog();
     pthread_mutex_destroy(&mutex);
     printf("aesdsocket complete\n");
 

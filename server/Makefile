@@ -1,53 +1,27 @@
-#GNU_PATH = /home/marshall/Programs/install-lnx/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin
+TARGET ?= aesdsocket
+OBJECTS ?= aesdsocket.o
+INCLUDES ?= -I.
+LDFLAGS ?=
+CFLAGS ?= -g -Wall -Wextra #-Werror 
+LIBS ?= -pthread -lrt
+CC ?= $(CROSS_COMPILE)gcc
 
-TARGET = aesdsocket
-SRC := aesdsocket.c
-OBJS := $(SRC:.c=.o) # Generate .o files from .c files
-#CFLAGS += -g -Wall -Wextra #-Werror
-
-ifeq ($(CC),)
-	CC = $(CROSS_COMPILE)gcc
-endif
-ifeq ($(CFLAGS),)
-	CFLAGS += -g -Wall -Wextra
-endif
-ifeq ($(LDFLAGS),)
-	LDFLAGS = -pthread -lrt
-endif
-
-# ==== Use this to have Buildroot compile for us ====
-.PHONY : all
-all : $(TARGET)
+.PHONY: all
+all: $(TARGET)
 	@echo "RUNNING ALL"
 
-$(TARGET) : $(OBJS)
+$(TARGET): $(OBJECTS)
 	@echo "BUILDING $(TARGET)..."
-	$(CC) $(CFLAGS) $(INCLUDES) -o $(TARGET) $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(LIBS) -o $(TARGET) $(OBJECTS)
 	@echo "BUILDING $(TARGET) DONE"
 
-# ==== Use this to compile natively for native architecture ====
-.PHONY : native
-native:
-	@echo "RUNNING NATIVE $(TARGET) BUILD..."
-	gcc $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
-	@echo "BUILDING NATIVE $(TARGET) DONE"
+aesdsocket.o: aesdsocket.c
+	@echo "BUILDING aesdsocket..."
+	$(CC) $(CFLAGS) $(INCLUDES) -c aesdsocket.c
+	@echo "BUILDING aesdsocket DONE"
 
-# ==== Use this to compile natively for foreign ARM64 architecture ====
-.PHONY : arm64
-arm64:
-	@echo "RUNNING ARM64 $(TARGET) BUILD..."
-#	aarch64-none-linux-gnu-gcc $(SRC) -o $(TARGET)
-	aarch64-none-linux-gnu-gcc $(CFLAGS) $(INCLUDES) $(SRC) -o $(TARGET) $(LDFLAGS)
-	@echo "BUILDING ARM64 $(TARGET) DONE"
-
-# ==== Use default ====
-.PHONY : default
-default:
-	@echo "WAITING FOR INSTRUCTIONS FOR default TARGET"
-
-# ==== Applies to all build types ====
-.PHONY: clean # redundant, but makes builds more effecient
-clean:
+.PHONY: clean distclean mrproper
+clean distclean mrproper:
 	@echo "CLEANING..."
 	-rm -f *.o $(TARGET) *.elf *.map
 	@echo "CLEANING DONE"
