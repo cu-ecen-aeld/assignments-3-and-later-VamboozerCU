@@ -20,17 +20,17 @@
  * @param buffer the buffer to search for corresponding offset.  Any necessary locking must be performed by caller.
  * @param char_offset the position to search for in the buffer list, describing the zero referenced
  *      character index if all buffer strings were concatenated end to end
- * @param entry_offset_byte_rtn is a pointer specifying a location to store the byte of the returned aesd_buffer_entry
+ * @param entry_offset_byte_rtn is a pointer specifying a location to store the byte of the returned struct aesd_buffer_entry
  *      buffptr member corresponding to char_offset.  This value is only set when a matching char_offset is found
- *      in aesd_buffer.
- * @return the struct aesd_buffer_entry structure representing the position described by char_offset, or
+ *      in struct aesd_buffer.
+ * @return the struct struct aesd_buffer_entry structure representing the position described by char_offset, or
  * NULL if this position is not available in the buffer (not enough data is written).
  */
-aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(aesd_circular_buffer *buffer,
+struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
             size_t char_offset, size_t *entry_offset_byte_rtn )
 {
     size_t current_offset = 0;
-    aesd_buffer_entry *entry;
+    struct aesd_buffer_entry *entry;
 
     for (int i = buffer->out_offs, j=0; 
         ((i != buffer->in_offs) || buffer->full) && (j < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED); 
@@ -53,7 +53,7 @@ aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(aesd_circular
 * Any necessary locking must be handled by the caller
 * Any memory referenced in @param add_entry must be allocated by and/or must have a lifetime managed by the caller.
 */
-void aesd_circular_buffer_add_entry(aesd_circular_buffer *buffer, const aesd_buffer_entry *add_entry) {
+void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry) {
     // Check if the buffer is full
     if (buffer->full) {
         // Overwrite the oldest entry
@@ -74,6 +74,6 @@ void aesd_circular_buffer_add_entry(aesd_circular_buffer *buffer, const aesd_buf
 /**
 * Initializes the circular buffer described by @param buffer to an empty struct
 */
-void aesd_circular_buffer_init(aesd_circular_buffer *buffer) {
-    memset(buffer,0,sizeof(aesd_circular_buffer));
+void aesd_circular_buffer_init(struct aesd_circular_buffer *buffer) {
+    memset(buffer,0,sizeof(struct aesd_circular_buffer));
 }
