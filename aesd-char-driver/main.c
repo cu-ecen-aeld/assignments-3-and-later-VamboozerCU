@@ -256,6 +256,7 @@ void aesd_cleanup_module(void)
 
     AESD_CIRCULAR_BUFFER_FOREACH(entry, &aesd_device.circular_buffer, index) {
         free(entry->buffptr);
+        free(entry);
     }
 
     kfree(&aesd_device.my_mutex);
