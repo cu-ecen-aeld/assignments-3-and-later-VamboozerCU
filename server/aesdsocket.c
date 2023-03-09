@@ -14,6 +14,10 @@
 #include <sys/queue.h>
 #include <time.h>
 #include <errno.h>
+#include <fcntl.h>
+
+#define USE_AESD_CHAR_DEVICE 1 // 1 = Write to my custom kernel driver
+                               // instead of to a file.
 
 //#define _BSD_SOURCE
 #define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
@@ -83,13 +87,15 @@ void* write_timestamp(void *arg){
         time(&current_time);
         time_info = localtime(&current_time);
         strftime(timestamp, sizeof(timestamp), "timestamp:%a, %d %b %Y %T %z\n", time_info);
-        
+
+#ifndef USE_AESD_CHAR_DEVICE
         pthread_mutex_lock(&mutex);
         fseek(fout, curLoc, SEEK_SET);
         fprintf(fout, "%s\n", timestamp);
         curLoc = (int)ftell(fout)-1;
         //fflush(fout);
         pthread_mutex_unlock(&mutex);
+#endif
 
         sleep(10);
     }
@@ -202,7 +208,12 @@ int main(int argc, char**argv){
     const char *daemonMode = argv[1];
     bool bDaemonMode = false;
 
+#ifdef USE_AESD_CHAR_DEVICE
+    fout = open("/dev/aesdchar", O_RDWR | O_CREAT | O_APPEND, 0644);
+#else
     fout = fopen("/var/tmp/aesdsocketdata.txt", "w+");
+#endif
+
     if(fout == NULL){
         perror("Error opening file");
         exit(EXIT_FAILURE);
