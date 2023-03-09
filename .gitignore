@@ -9,3 +9,5 @@ server/aesdsocket
 server/valgrind-out.txt
 
 *.o
+
+aesd-char-driver/.main.o.d
