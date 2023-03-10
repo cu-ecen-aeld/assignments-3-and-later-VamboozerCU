@@ -11,11 +11,11 @@
  *
  */
 
-#include "aesdchar.h"
-#include "aesd-circular-buffer.h"
 
-#ifdef __KERNEL__
-#include <linux/types.h> // replaces stddef.h, stdint.h, & stdbool.h
+
+//#ifdef __KERNEL__
+/*
+#include <linux/types.h>
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/printk.h>
@@ -23,13 +23,35 @@
 #include <linux/fs.h> // file_operations
 #include <linux/mutex.h>
 #include <linux/slab.h>
-#else
+*/
+
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/printk.h>
+#include <linux/types.h> // replaces stddef.h, stdint.h, & stdbool.h
+#include <linux/cdev.h>
+#include <linux/fs.h>
+#include <linux/slab.h>
+#include "aesdchar.h"
+//#include "aesd-circular-buffer.h"
+#include <linux/mutex.h>
+#include <linux/gfp.h>
+//#include <linux/uaccess.h>
+
+//#else
+/*
 #include <stddef.h> // size_t
 #include <stdint.h> // uintx_t
 #include <stdbool.h>
-#include <init.h>
-#include <mutex.h>
-#endif
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/printk.h>
+#include <linux/cdev.h>
+#include <linux/fs.h> // file_operations
+#include <linux/mutex.h>
+#include <linux/slab.h>
+*/
+//#endif
 
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
@@ -72,7 +94,7 @@ void aesd_add_entryK(struct aesd_circular_bufferK *buffer, const struct aesd_buf
 }
 
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fposK(struct aesd_circular_bufferK *buffer,
-            size_t char_offset, size_t *entry_offset_byte_rtn )
+            size_t char_offset, loff_t *entry_offset_byte_rtn )
 {
     size_t current_offset = 0;
     struct aesd_buffer_entry *entry;
@@ -81,7 +103,7 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fposK(struc
         ((i != buffer->in_offs) || buffer->full) && (j < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED); 
         i = (i + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED, j++)
     {
-        entry = &buffer->entry[i];
+        entry = (buffer)->entry[i];
         if((current_offset + entry->size) > char_offset){
             *entry_offset_byte_rtn = char_offset - current_offset;
             return entry;
@@ -125,9 +147,12 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 
     PDEBUG("read %zu bytes with offset %lld",count,*f_pos);
 
-    mutex_lock_interruptible(&aesd_device.my_mutex);
+    //mutex_lock_interruptible(&aesd_device.my_mutex);
+    retval = (ssize_t)mutex_lock_interruptible(&aesd_device.my_mutex);
+    if (retval)
+        return retval;
 
-    entry = aesd_circular_buffer_find_entry_offset_for_fpos(&localDev->circular_buffer, count, f_pos);
+    entry = aesd_circular_buffer_find_entry_offset_for_fposK(&localDev->circular_buffer, count, f_pos);
     retval = *f_pos;
 
     mutex_unlock(&aesd_device.my_mutex);
@@ -146,7 +171,10 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 
     PDEBUG("write %zu bytes with offset %lld",count,*f_pos);
 
-    mutex_lock_interruptible(&aesd_device.my_mutex);
+    //mutex_lock_interruptible(&aesd_device.my_mutex);
+    retval = (ssize_t)mutex_lock_interruptible(&aesd_device.my_mutex);
+    if (retval)
+        return retval;
 
     // Steps to append new write data to current write buffer
     aesd_device.currentWriteBuffer = krealloc(aesd_device.currentWriteBuffer, 
@@ -244,6 +272,7 @@ int aesd_init_module(void)
 
 exit_cleanup:
     aesd_cleanup_module();
+    return result;
 }
 
 void aesd_cleanup_module(void)
@@ -254,9 +283,9 @@ void aesd_cleanup_module(void)
 
     cdev_del(&aesd_device.cdev);
 
-    AESD_CIRCULAR_BUFFER_FOREACH(entry, &aesd_device.circular_buffer, index) {
-        free(entry->buffptr);
-        free(entry);
+    AESD_CIRCULAR_BUFFER_FOREACH(entry, aesd_device.circular_buffer, index) {
+        kfree(entry->buffptr);
+        kfree(entry);
     }
 
     kfree(&aesd_device.my_mutex);

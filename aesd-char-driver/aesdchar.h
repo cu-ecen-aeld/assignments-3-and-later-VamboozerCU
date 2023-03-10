@@ -8,7 +8,7 @@
 #ifndef AESD_CHAR_DRIVER_AESDCHAR_H_
 #define AESD_CHAR_DRIVER_AESDCHAR_H_
 
-#include "aesd-circular-buffer.h"
+//#include "aesd-circular-buffer.h"
 
 //#define AESD_DEBUG 1  //Remove comment on this line to enable debug
 
@@ -24,6 +24,13 @@
 #else
 #  define PDEBUG(fmt, args...) /* not debugging: nothing */
 #endif
+
+#define AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED 10
+
+struct aesd_buffer_entry{
+    const char *buffptr; // A location where the buffer contents in buffptr are stored
+    size_t size; // Number of bytes stored in buffptr
+};
 
 struct aesd_circular_bufferK{
     // An array of pointers to memory allocated for the most recent write operations
@@ -45,6 +52,12 @@ struct aesd_dev
 
 void aesd_add_entryK(struct aesd_circular_bufferK *buffer, const struct aesd_buffer_entry *add_entry);
 struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fposK(struct aesd_circular_bufferK *buffer,
-            size_t char_offset, size_t *entry_offset_byte_rtn );
+            size_t char_offset, loff_t *entry_offset_byte_rtn );
+void aesd_cleanup_module(void);
+
+#define AESD_CIRCULAR_BUFFER_FOREACH(entryptr,buffer,index) \
+    for(index=0, entryptr=((buffer).entry[index]); \
+            index<AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; \
+            index++, entryptr=((buffer).entry[index]))
 
 #endif /* AESD_CHAR_DRIVER_AESDCHAR_H_ */

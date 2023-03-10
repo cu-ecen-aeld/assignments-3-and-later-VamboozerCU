@@ -11,3 +11,7 @@ server/valgrind-out.txt
 *.o
 
 aesd-char-driver/.main.o.d
+
+aesd-char-driver/oe-logs
+
+aesd-char-driver/oe-workdir
