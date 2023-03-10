@@ -169,6 +169,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     struct aesd_buffer_entry entryCurrent;
     char *localBuffer = kmalloc(count, GFP_KERNEL);
     bool bNewlineCharFound = false;
+    size_t i;
 
     PDEBUG("write %zu bytes with offset %lld",count,*f_pos);
 
@@ -197,7 +198,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
     // end of a new packet, add packet as new entry into circular
     // buffer and reset the current write buffer in preparation
     // for the next packet.
-    for (int i = 0; i < count; i++){
+    for (i = 0; i < count; i++){
         if (localBuffer[i] == '\n'){
             bNewlineCharFound = true; // newline character found
             break;
